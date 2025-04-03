@@ -1,3 +1,4 @@
+use opencv::core::CV_VERSION;
 fn main() {
-    println!("Hello, world!");
+    println!("{CV_VERSION}");
 }
