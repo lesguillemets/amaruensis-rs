@@ -11,10 +11,9 @@ use consts::*;
 
 pub fn do_main() {
     eprint_opencv_version();
-    let pair = load_images();
-    let ohtsu = pair.apply(to_bw_ohtsu);
-    let scanned = ohtsu.scanned;
-    let paper = ohtsu.source;
+    let pair = PaperPair::from_files(EXAMPLE_PAPER_PATH, EXAMPLE_SCANNED_PATH, false);
+    let scanned = pair.scanned;
+    let paper = pair.source;
     let diff = (&scanned - &paper).into_result().unwrap();
     println!("{paper:?}");
     println!("{scanned:?}");
@@ -30,21 +29,6 @@ fn eprint_opencv_version() {
     eprintln!("Currently using opencv {CV_VERSION}");
 }
 
-fn load_images() -> PaperPair {
-    let paper = imread(EXAMPLE_PAPER_PATH, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
-    let scanned = imread(EXAMPLE_SCANNED_PATH, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
-    if DEBUG {
-        eprintln!("{paper:?}");
-        eprintln!("{scanned:?}");
-    }
-    let mut p = PaperPair {
-        source: paper,
-        scanned,
-    };
-    p.fit_sizes();
-    p
-}
-
 /// Pair of the original document and scanned (filled) document
 #[derive(Clone, Debug)]
 pub struct PaperPair {
@@ -53,6 +37,25 @@ pub struct PaperPair {
 }
 
 impl PaperPair {
+    pub fn from_files(source: &str, scanned: &str, use_otsu: bool) -> Self {
+        let paper = imread(EXAMPLE_PAPER_PATH, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
+        let scanned = imread(EXAMPLE_SCANNED_PATH, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
+        if DEBUG {
+            eprintln!("Loaded paper: {paper:?}");
+            eprintln!("Loaded scanned: {scanned:?}");
+        }
+        let mut p = PaperPair {
+            source: paper,
+            scanned,
+        };
+        p.fit_sizes();
+        if use_otsu {
+            p.apply(to_bw_ohtsu);
+        } else {
+            p.apply(to_bw);
+        }
+        p
+    }
     pub fn apply(&self, f: fn(&Mat) -> Mat) -> Self {
         let new_source = f(&self.source);
         let new_scanned = f(&self.scanned);
