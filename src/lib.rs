@@ -2,7 +2,9 @@ mod consts;
 
 const DEBUG: bool = true;
 use opencv::core::{no_array, KeyPoint, Ptr, Range, Vector, CV_32F, CV_VERSION};
-use opencv::features2d::{draw_keypoints_def, draw_matches_def, FlannBasedMatcher, ORB};
+use opencv::features2d::{
+    draw_keypoints_def, draw_matches_def, FlannBasedMatcher, KeyPointsFilter, ORB,
+};
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imread, ImreadModes};
@@ -113,7 +115,7 @@ impl PaperPair {
             .convert_to_def(&mut scan_desc, CV_32F)
             .unwrap();
         flann_matcher
-            .knn_train_match_def(&scan_desc, &src_desc, &mut matches, 3)
+            .train_match_def(&src_desc, &scan_desc, &mut matches)
             .unwrap();
         if DEBUG {
             let mut result = Mat::default();
@@ -122,7 +124,7 @@ impl PaperPair {
                 &source_keypoints,
                 &self.scanned,
                 &scan_keypoints,
-                &matches.iter().flatten().collect(),
+                &matches,
                 &mut result,
             )
             .unwrap();
