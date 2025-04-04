@@ -1,7 +1,7 @@
 mod consts;
 
 const DEBUG: bool = true;
-use opencv::core::{no_array, KeyPoint, Ptr, Range, Vector, CV_VERSION};
+use opencv::core::{no_array, KeyPoint, Ptr, Range, Vector, CV_32F, CV_VERSION};
 use opencv::features2d::{draw_keypoints_def, draw_matches_def, FlannBasedMatcher, ORB};
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
@@ -96,14 +96,24 @@ impl PaperPair {
     pub fn detect_transform(&self) {
         let (source_keypoints, source_descriptors) = detect_and_compute_orb(&self.source);
         let (scan_keypoints, scan_descriptors) = detect_and_compute_orb(&self.scanned);
+        let autoindexparams = flann::AutotunedIndexParams::new_def().expect("autotunedindexparams");
         let flann_matcher = FlannBasedMatcher::new(
-            &Ptr::new(flann::AutotunedIndexParams::new_def().unwrap().into()),
+            &Ptr::new(autoindexparams.into()),
             &Ptr::new(flann::SearchParams::new_def().unwrap()),
         )
-        .unwrap();
+        .expect("Creating FlannBasedMatcher");
         let mut matches = Vector::new();
+        let mut src_desc = Mat::default();
+        let mut scan_desc = Mat::default();
+        // https://stackoverflow.com/a/29695032
+        source_descriptors
+            .convert_to_def(&mut src_desc, CV_32F)
+            .unwrap();
+        source_descriptors
+            .convert_to_def(&mut scan_desc, CV_32F)
+            .unwrap();
         flann_matcher
-            .knn_train_match_def(&scan_descriptors, &source_descriptors, &mut matches, 3)
+            .knn_train_match_def(&scan_desc, &src_desc, &mut matches, 3)
             .unwrap();
         if DEBUG {
             let mut result = Mat::default();
