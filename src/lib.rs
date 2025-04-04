@@ -1,7 +1,7 @@
 mod consts;
 
 const DEBUG: bool = true;
-use opencv::core::CV_VERSION;
+use opencv::core::{Range, CV_VERSION};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imread, ImreadModes};
 use opencv::imgproc::{threshold, ThresholdTypes};
@@ -37,14 +37,16 @@ fn load_images() -> PaperPair {
         eprintln!("{paper:?}");
         eprintln!("{scanned:?}");
     }
-    PaperPair {
+    let mut p = PaperPair {
         source: paper,
         scanned,
-    }
+    };
+    p.fit_sizes();
+    p
 }
 
 /// Pair of the original document and scanned (filled) document
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PaperPair {
     source: Mat,
     scanned: Mat,
@@ -70,6 +72,30 @@ impl PaperPair {
             source: new_source,
             scanned: new_scanned,
         }
+    }
+    /// Adjust the sizes of the images by dropping pixels.
+    /// (assuming they don't differ too much)
+    pub fn fit_sizes(&mut self) {
+        let the_row = std::cmp::min(self.source.rows(), self.scanned.rows());
+        let the_col = std::cmp::min(self.source.cols(), self.scanned.cols());
+        Range::new(0, the_col).unwrap();
+        let cropped_source = self
+            .source
+            .rowscols(
+                // doesn't impl Clone
+                Range::new(0, the_row).unwrap(),
+                Range::new(0, the_col).unwrap(),
+            )
+            .unwrap();
+        let cropped_scanned = self
+            .scanned
+            .rowscols(
+                Range::new(0, the_row).unwrap(),
+                Range::new(0, the_col).unwrap(),
+            )
+            .unwrap();
+        self.source = cropped_source.clone_pointee();
+        self.scanned = cropped_scanned.clone_pointee();
     }
 }
 
