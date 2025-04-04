@@ -1,4 +1,4 @@
-use opencv::core::CV_VERSION;
+use amaruensis;
 fn main() {
-    println!("{CV_VERSION}");
+    amaruensis::do_main()
 }
