@@ -7,7 +7,7 @@ use opencv::features2d::{
 };
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
-use opencv::imgcodecs::{imread, ImreadModes};
+use opencv::imgcodecs::{imread, imwrite, ImreadModes, ImwriteFlags};
 use opencv::imgproc::{threshold, ThresholdTypes};
 use opencv::prelude::*;
 
@@ -130,6 +130,12 @@ impl PaperPair {
             .unwrap();
             imshow("Matching result", &result).unwrap();
             wait_key(0).unwrap();
+            imwrite(
+                "result.png",
+                &result,
+                &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
+            )
+            .unwrap();
         }
     }
 }
