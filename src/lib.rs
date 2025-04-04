@@ -10,7 +10,9 @@ use consts::*;
 
 pub fn do_main() {
     eprint_opencv_version();
-    let (paper, scanned) = load_images();
+    let pair = load_images();
+    let scanned = pair.scanned;
+    let paper = pair.source;
     let diff = (&scanned - &paper).into_result().unwrap();
     println!("{paper:?}");
     println!("{scanned:?}");
@@ -26,28 +28,42 @@ fn eprint_opencv_version() {
     eprintln!("Currently using opencv {CV_VERSION}");
 }
 
-fn load_images() -> (Mat, Mat) {
+fn load_images() -> PaperPair {
     let paper = imread(EXAMPLE_PAPER_PATH, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
     let scanned = imread(EXAMPLE_SCANNED_PATH, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
     println!("{paper:?}");
     println!("{scanned:?}");
-    let mut p = Mat::default();
-    let mut s = Mat::default();
+    let mut loaded = PaperPair {
+        source: paper,
+        scanned,
+    };
+    loaded.apply_both(to_bw);
+    loaded
+}
+
+/// Pair of the original document and scanned (filled) document
+#[derive(Debug)]
+pub struct PaperPair {
+    source: Mat,
+    scanned: Mat,
+}
+
+impl PaperPair {
+    pub fn apply_both(&mut self, f: fn(&Mat) -> Mat) {
+        self.source = f(&self.source);
+        self.scanned = f(&self.scanned);
+    }
+}
+
+fn to_bw(m: &Mat) -> Mat {
+    let mut dest = Mat::default();
     threshold(
-        &paper,
-        &mut p,
+        m,
+        &mut dest,
         consts::BLACK_WHITE_THRESH,
         consts::WHITE,
         ThresholdTypes::THRESH_BINARY.into(),
     )
     .unwrap();
-    threshold(
-        &scanned,
-        &mut s,
-        consts::BLACK_WHITE_THRESH,
-        consts::WHITE,
-        ThresholdTypes::THRESH_BINARY.into(),
-    )
-    .unwrap();
-    (p, s)
+    dest
 }
