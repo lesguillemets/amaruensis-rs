@@ -1,7 +1,9 @@
 mod consts;
 
 const DEBUG: bool = true;
-use opencv::core::{Range, CV_VERSION};
+use opencv::core::{no_array, KeyPoint, Ptr, Range, Vector, CV_VERSION};
+use opencv::features2d::{draw_keypoints_def, draw_matches_def, FlannBasedMatcher, ORB};
+use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imread, ImreadModes};
 use opencv::imgproc::{threshold, ThresholdTypes};
@@ -12,17 +14,7 @@ use consts::*;
 pub fn do_main() {
     eprint_opencv_version();
     let pair = PaperPair::from_files(EXAMPLE_PAPER_PATH, EXAMPLE_SCANNED_PATH, false);
-    let scanned = pair.scanned;
-    let paper = pair.source;
-    let diff = (&scanned - &paper).into_result().unwrap();
-    println!("{paper:?}");
-    println!("{scanned:?}");
-    imshow("paper", &paper).unwrap();
-    wait_key(0).unwrap();
-    imshow("scanned", &scanned).unwrap();
-    wait_key(0).unwrap();
-    imshow("diff", &diff).unwrap();
-    wait_key(0).unwrap();
+    pair.detect_transform();
 }
 
 fn eprint_opencv_version() {
@@ -100,6 +92,50 @@ impl PaperPair {
         self.source = cropped_source.clone_pointee();
         self.scanned = cropped_scanned.clone_pointee();
     }
+
+    pub fn detect_transform(&self) {
+        let (source_keypoints, source_descriptors) = detect_and_compute_orb(&self.source);
+        let (scan_keypoints, scan_descriptors) = detect_and_compute_orb(&self.scanned);
+        let flann_matcher = FlannBasedMatcher::new(
+            &Ptr::new(flann::AutotunedIndexParams::new_def().unwrap().into()),
+            &Ptr::new(flann::SearchParams::new_def().unwrap()),
+        )
+        .unwrap();
+        let mut matches = Vector::new();
+        flann_matcher
+            .knn_train_match_def(&scan_descriptors, &source_descriptors, &mut matches, 3)
+            .unwrap();
+        if DEBUG {
+            let mut result = Mat::default();
+            draw_matches_def(
+                &self.source,
+                &source_keypoints,
+                &self.scanned,
+                &scan_keypoints,
+                &matches.iter().flatten().collect(),
+                &mut result,
+            )
+            .unwrap();
+            imshow("Matching result", &result).unwrap();
+            wait_key(0).unwrap();
+        }
+    }
+}
+
+fn detect_and_compute_orb(m: &Mat) -> (Vector<KeyPoint>, Mat) {
+    let mut orb = ORB::create_def().unwrap();
+    let mut keypoints = Vector::new();
+    let mut descriptors = Mat::default();
+    // TODO: 「ここには回答は来ない場所」を mask として使ってもよいかもしれない
+    orb.detect_and_compute_def(&m, &no_array(), &mut keypoints, &mut descriptors)
+        .unwrap();
+    if DEBUG {
+        let mut drawn = Mat::default();
+        draw_keypoints_def(&m, &keypoints, &mut drawn).unwrap();
+        imshow("Keypoints", &drawn).unwrap();
+        wait_key(0).unwrap();
+    }
+    (keypoints, descriptors)
 }
 
 fn to_bw(m: &Mat) -> Mat {
