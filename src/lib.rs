@@ -32,8 +32,8 @@ pub struct PaperPair {
 
 impl PaperPair {
     pub fn from_files(source: &str, scanned: &str, use_otsu: bool) -> Self {
-        let paper = imread(EXAMPLE_PAPER_PATH, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
-        let scanned = imread(EXAMPLE_SCANNED_PATH, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
+        let paper = imread(source, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
+        let scanned = imread(scanned, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
         if DEBUG {
             eprintln!("Loaded paper: {paper:?}");
             eprintln!("Loaded scanned: {scanned:?}");
@@ -111,7 +111,7 @@ impl PaperPair {
         source_descriptors
             .convert_to_def(&mut src_desc, CV_32F)
             .unwrap();
-        source_descriptors
+        scan_descriptors
             .convert_to_def(&mut scan_desc, CV_32F)
             .unwrap();
         flann_matcher
