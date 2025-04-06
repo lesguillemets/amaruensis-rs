@@ -2,6 +2,7 @@ mod base;
 pub mod consts;
 mod orb_flann;
 mod paper_pair;
+mod sheet;
 
 use opencv::core::CV_VERSION;
 

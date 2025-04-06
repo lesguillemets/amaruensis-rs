@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.35", features = ["derive"] }
 opencv = "0.94.4"
+serde = { version = "1.0.219", features = ["derive"] }
