@@ -9,9 +9,9 @@ use opencv::core::CV_VERSION;
 use orb_flann::ORBFlann;
 use paper_pair::PaperPair;
 
-pub fn do_main(f0: String, f1: String) {
+pub fn do_main(f0: String, f1: String, fs: String) {
     eprint_opencv_version();
-    let pair = PaperPair::from_files(&f0, &f1, false);
+    let pair = PaperPair::from_files(&f0, &f1, &fs, false);
     pair.detect_transform();
 }
 

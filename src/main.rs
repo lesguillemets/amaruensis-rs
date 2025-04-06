@@ -8,6 +8,8 @@ struct Cli {
     source: Option<String>,
     #[arg(long)]
     scanned: Option<String>,
+    #[arg(long)]
+    sheet: Option<String>,
 }
 
 fn main() {
@@ -15,5 +17,6 @@ fn main() {
     amaruensis::do_main(
         cli.source.unwrap_or(EXAMPLE_PAPER_PATH.to_string()),
         cli.scanned.unwrap_or(EXAMPLE_SCANNED_PATH.to_string()),
+        cli.sheet.unwrap_or(EXAMPLE_SHEET_PATH.to_string()),
     );
 }

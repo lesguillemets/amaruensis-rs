@@ -3,6 +3,10 @@ use opencv::imgcodecs::{imread, ImreadModes};
 use opencv::prelude::*;
 
 use crate::base::{to_bw, to_bw_ohtsu};
+use crate::sheet::Sheet;
+
+use std::fs::File;
+use std::io::BufReader;
 
 const DEBUG: bool = true;
 
@@ -10,19 +14,25 @@ const DEBUG: bool = true;
 #[derive(Clone, Debug)]
 pub struct PaperPair {
     pub source: Mat,
+    pub sheet_data: Sheet,
     pub scanned: Mat,
 }
 
 impl PaperPair {
-    pub fn from_files(source: &str, scanned: &str, use_otsu: bool) -> Self {
+    pub fn from_files(source: &str, scanned: &str, sheet: &str, use_otsu: bool) -> Self {
         let paper = imread(source, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
         let scanned = imread(scanned, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
+        let sheet_file = File::open(sheet).unwrap();
+        let reader = BufReader::new(sheet_file);
+        let sheet_data: Sheet = serde_json::from_reader(reader).unwrap();
         if DEBUG {
             eprintln!("Loaded paper: {paper:?}");
             eprintln!("Loaded scanned: {scanned:?}");
+            eprintln!("Loaded sheet: {sheet_data:?}");
         }
         let mut p = PaperPair {
             source: paper,
+            sheet_data,
             scanned,
         };
         p.fit_sizes();
@@ -38,6 +48,7 @@ impl PaperPair {
         let new_scanned = f(&self.scanned);
         PaperPair {
             source: new_source,
+            sheet_data: self.sheet_data.clone(),
             scanned: new_scanned,
         }
     }
@@ -50,6 +61,7 @@ impl PaperPair {
         let new_scanned = f(self.scanned);
         PaperPair {
             source: new_source,
+            sheet_data: self.sheet_data,
             scanned: new_scanned,
         }
     }
