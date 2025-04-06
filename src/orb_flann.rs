@@ -1,4 +1,4 @@
-use opencv::core::{no_array, KeyPoint, Ptr, Vector, CV_32F};
+use opencv::core::{no_array, DMatch, KeyPoint, Ptr, Vector, CV_32F};
 use opencv::features2d::{
     draw_keypoints_def, draw_matches_def, FlannBasedMatcher, KeyPointsFilter, ORB,
 };
@@ -6,6 +6,8 @@ use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imwrite, ImwriteFlags};
 use opencv::prelude::*;
+
+use crate::consts::ORB_FLANN_SHOW_N_BEST_MATCHES;
 
 use crate::paper_pair::PaperPair;
 
@@ -38,6 +40,14 @@ impl ORBFlann for PaperPair {
         flann_matcher
             .train_match_def(&src_desc, &scan_desc, &mut matches)
             .unwrap();
+        // use the best matches in the visualisation
+        let mut best_matches: Vec<DMatch> = matches.into_iter().collect();
+        best_matches.sort_by(|ma, mb| ma.distance.partial_cmp(&mb.distance).unwrap());
+        best_matches = best_matches
+            .into_iter()
+            .take(ORB_FLANN_SHOW_N_BEST_MATCHES)
+            .collect();
+        let bm: Vector<DMatch> = best_matches.into_iter().collect();
         if DEBUG {
             let mut result = Mat::default();
             draw_matches_def(
@@ -45,7 +55,7 @@ impl ORBFlann for PaperPair {
                 &source_keypoints,
                 &self.scanned,
                 &scan_keypoints,
-                &matches,
+                &bm,
                 &mut result,
             )
             .unwrap();
