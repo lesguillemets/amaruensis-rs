@@ -1,17 +1,16 @@
 mod base;
-mod consts;
+pub mod consts;
 mod orb_flann;
 mod paper_pair;
 
 use opencv::core::CV_VERSION;
 
-use consts::*;
 use orb_flann::ORBFlann;
 use paper_pair::PaperPair;
 
-pub fn do_main() {
+pub fn do_main(f0: String, f1: String) {
     eprint_opencv_version();
-    let pair = PaperPair::from_files(EXAMPLE_PAPER_PATH, EXAMPLE_SCANNED_PATH, false);
+    let pair = PaperPair::from_files(&f0, &f1, false);
     pair.detect_transform();
 }
 
