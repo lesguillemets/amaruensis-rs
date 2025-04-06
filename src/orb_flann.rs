@@ -73,6 +73,14 @@ fn detect_and_compute_orb(m: &Mat) -> (Vector<KeyPoint>, Mat) {
         draw_keypoints_def(&m, &keypoints, &mut drawn).unwrap();
         imshow("Keypoints", &drawn).unwrap();
         wait_key(0).unwrap();
+        let file_name = format!(
+            "result_keypoints_{:?}.jpg",
+            std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .subsec_nanos()
+        );
+        imwrite(&file_name, &drawn, &Vector::from_slice(&[])).unwrap();
     }
     (keypoints, descriptors)
 }
