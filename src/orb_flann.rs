@@ -7,7 +7,7 @@ use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imwrite, ImwriteFlags};
 use opencv::prelude::*;
 
-use crate::consts::ORB_FLANN_SHOW_N_BEST_MATCHES;
+use crate::consts::{ORB_ENLARGE_RECT_BY, ORB_FLANN_SHOW_N_BEST_MATCHES};
 
 use crate::paper_pair::PaperPair;
 
@@ -23,7 +23,18 @@ impl ORBFlann for PaperPair {
             &self.source,
             Some(self.sheet_data.gen_detect_mask(&self.source).unwrap()),
         );
-        let (scan_keypoints, scan_descriptors) = detect_and_compute_orb(&self.scanned, None);
+        let (scan_keypoints, scan_descriptors) = detect_and_compute_orb(
+            &self.scanned,
+            Some(
+                self.sheet_data
+                    .gen_enlarged_detect_mask(
+                        &self.scanned,
+                        ORB_ENLARGE_RECT_BY,
+                        ORB_ENLARGE_RECT_BY,
+                    )
+                    .unwrap(),
+            ),
+        );
         let autoindexparams = flann::AutotunedIndexParams::new_def().expect("autotunedindexparams");
         let flann_matcher = FlannBasedMatcher::new(
             &Ptr::new(autoindexparams.into()),

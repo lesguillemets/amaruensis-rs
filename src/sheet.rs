@@ -13,6 +13,10 @@ pub struct SheetData {
 
 impl SheetData {
     pub fn gen_detect_mask(&self, img: &Mat) -> error::Result<Mat> {
+        self.gen_enlarged_detect_mask(img, 0, 0)
+    }
+
+    pub fn gen_enlarged_detect_mask(&self, img: &Mat, by_x: i32, by_y: i32) -> error::Result<Mat> {
         let mut m = Mat::new_rows_cols_with_default(
             img.rows(),
             img.cols(),
@@ -20,7 +24,7 @@ impl SheetData {
             Scalar_::new(0.0, 0.0, 0.0, 0.0),
         )?;
         // FIXME: multiple rects
-        let mut roi = m.roi_mut(self.detect_rects[0].into())?;
+        let mut roi = m.roi_mut(self.detect_rects[0].enlarge(by_x, by_y).into())?;
         // FIXME : not sure
         roi.set_to_def(&Scalar_::new(255.0, 255.0, 255.0, 255.0))?;
         Ok(m)
@@ -79,6 +83,19 @@ impl Rect_ {
             y,
             width,
             height,
+        }
+    }
+    /// 両側に広げた Rect_ を返す
+    pub fn enlarge(&self, by_x: i32, by_y: i32) -> Self {
+        let x = std::cmp::max(self.x - by_x, 0);
+        let y = std::cmp::max(self.y - by_y, 0);
+        let rightmost = self.x + self.width + by_x;
+        let bottommost = self.y + self.height + by_y;
+        Rect_ {
+            x,
+            y,
+            width: rightmost - x,
+            height: bottommost - y,
         }
     }
 }
