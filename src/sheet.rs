@@ -1,4 +1,6 @@
-use opencv::core::Rect;
+use opencv::core::{Rect, Scalar_, CV_8UC1};
+use opencv::error;
+use opencv::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 
@@ -7,6 +9,22 @@ pub struct SheetData {
     pub name: String,
     pub img_path: String,
     pub detect_rects: Vec<Rect_>,
+}
+
+impl SheetData {
+    pub fn gen_detect_mask(&self, img: &Mat) -> error::Result<Mat> {
+        let mut m = Mat::new_rows_cols_with_default(
+            img.rows(),
+            img.cols(),
+            CV_8UC1,
+            Scalar_::new(0.0, 0.0, 0.0, 0.0),
+        )?;
+        // FIXME: multiple rects
+        let mut roi = m.roi_mut(self.detect_rects[0].into())?;
+        // FIXME : not sure
+        roi.set_to_def(&Scalar_::new(255.0, 255.0, 255.0, 255.0))?;
+        Ok(m)
+    }
 }
 
 #[derive(Default)]

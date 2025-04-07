@@ -19,8 +19,11 @@ pub trait ORBFlann {
 
 impl ORBFlann for PaperPair {
     fn detect_transform(&self) {
-        let (source_keypoints, source_descriptors) = detect_and_compute_orb(&self.source);
-        let (scan_keypoints, scan_descriptors) = detect_and_compute_orb(&self.scanned);
+        let (source_keypoints, source_descriptors) = detect_and_compute_orb(
+            &self.source,
+            Some(self.sheet_data.gen_detect_mask(&self.source).unwrap()),
+        );
+        let (scan_keypoints, scan_descriptors) = detect_and_compute_orb(&self.scanned, None);
         let autoindexparams = flann::AutotunedIndexParams::new_def().expect("autotunedindexparams");
         let flann_matcher = FlannBasedMatcher::new(
             &Ptr::new(autoindexparams.into()),
@@ -71,13 +74,18 @@ impl ORBFlann for PaperPair {
     }
 }
 
-fn detect_and_compute_orb(m: &Mat) -> (Vector<KeyPoint>, Mat) {
+fn detect_and_compute_orb(m: &Mat, mask: Option<Mat>) -> (Vector<KeyPoint>, Mat) {
     let mut orb = ORB::create_def().unwrap();
     let mut keypoints = Vector::new();
     let mut descriptors = Mat::default();
     // TODO: 「ここには回答は来ない場所」を mask として使ってもよいかもしれない
-    orb.detect_and_compute_def(&m, &no_array(), &mut keypoints, &mut descriptors)
-        .unwrap();
+    if let Some(mask) = mask {
+        orb.detect_and_compute_def(&m, &mask, &mut keypoints, &mut descriptors)
+            .unwrap();
+    } else {
+        orb.detect_and_compute_def(&m, &no_array(), &mut keypoints, &mut descriptors)
+            .unwrap();
+    }
     if DEBUG {
         let mut drawn = Mat::default();
         draw_keypoints_def(&m, &keypoints, &mut drawn).unwrap();
