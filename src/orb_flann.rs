@@ -1,11 +1,14 @@
 use opencv::calib3d::{find_homography, RANSAC};
-use opencv::core::{no_array, DMatch, KeyPoint, Point2f, Ptr, Vector, CV_32F};
+use opencv::core::{
+    no_array, DMatch, KeyPoint, Point2f, Ptr, Size, VecN, Vector, BORDER_CONSTANT, CV_32F,
+};
 use opencv::features2d::{
     draw_keypoints_def, draw_matches_def, FlannBasedMatcher, KeyPointsFilter, ORB,
 };
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imwrite, ImwriteFlags};
+use opencv::imgproc::{warp_perspective, warp_perspective_def, INTER_LINEAR, WARP_INVERSE_MAP};
 use opencv::prelude::*;
 
 use crate::consts::{ORB_ENLARGE_RECT_BY, ORB_FLANN_SHOW_N_BEST_MATCHES};
@@ -94,11 +97,13 @@ impl ORBFlann for PaperPair {
         let mut to_points: Vector<KeyPoint> = Vector::with_capacity(bm.len());
         for kp in bm.iter() {
             from_points.push(
+                // these unwraps will never fail
                 source_keypoints
                     .get(kp.train_idx.try_into().unwrap())
                     .unwrap(),
             );
             to_points.push(
+                // these unwraps will never fail
                 scan_keypoints
                     .get(kp.query_idx.try_into().unwrap())
                     .unwrap(),
@@ -109,8 +114,34 @@ impl ORBFlann for PaperPair {
         let mut to_p2f: Vector<Point2f> = Vector::with_capacity(bm.len());
         KeyPoint::convert_def(&to_points, &mut to_p2f).unwrap();
         let mut result_mask = Mat::default();
-        let homography = find_homography(&from_p2f, &to_p2f, &mut result_mask, RANSAC, 10.0);
-        eprintln!("{:?}", homography);
+        let homography =
+            find_homography(&from_p2f, &to_p2f, &mut result_mask, RANSAC, 10.0).unwrap();
+
+        // use that matrix to transform
+        let mut transformed_source = Mat::default();
+        warp_perspective(
+            &self.source,
+            &mut transformed_source,
+            &homography,
+            Size {
+                width: self.source.cols(),
+                height: self.source.rows(),
+            },
+            INTER_LINEAR,
+            BORDER_CONSTANT,
+            VecN::default(),
+        )
+        .unwrap();
+        if DEBUG {
+            imshow("transformed", &transformed_source).unwrap();
+            wait_key(0).unwrap();
+            imwrite(
+                "transformed.png",
+                &transformed_source,
+                &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
+            )
+            .unwrap();
+        }
     }
 }
 

@@ -35,7 +35,7 @@ impl PaperPair {
             sheet_data,
             scanned,
         };
-        p.fit_sizes();
+        // p.fit_sizes();
         if use_otsu {
             p.apply(to_bw_ohtsu);
         } else {
