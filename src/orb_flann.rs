@@ -124,8 +124,8 @@ impl ORBFlann for PaperPair {
             &mut transformed_source,
             &homography,
             Size {
-                width: self.source.cols(),
-                height: self.source.rows(),
+                width: self.scanned.cols(),
+                height: self.scanned.rows(),
             },
             INTER_LINEAR,
             BORDER_CONSTANT,
@@ -138,6 +138,15 @@ impl ORBFlann for PaperPair {
             imwrite(
                 "transformed.png",
                 &transformed_source,
+                &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
+            )
+            .unwrap();
+            let diff = (transformed_source - &self.scanned).into_result().unwrap();
+            imshow("diff", &diff).unwrap();
+            wait_key(0).unwrap();
+            imwrite(
+                "diff.png",
+                &diff,
                 &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
             )
             .unwrap();
