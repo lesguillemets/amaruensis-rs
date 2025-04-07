@@ -8,7 +8,9 @@ use opencv::features2d::{
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imwrite, ImwriteFlags};
-use opencv::imgproc::{warp_perspective, warp_perspective_def, INTER_LINEAR, WARP_INVERSE_MAP};
+use opencv::imgproc::{
+    median_blur, warp_perspective, warp_perspective_def, INTER_LINEAR, WARP_INVERSE_MAP,
+};
 use opencv::prelude::*;
 
 use crate::consts::{ORB_ENLARGE_RECT_BY, ORB_FLANN_SHOW_N_BEST_MATCHES};
@@ -142,11 +144,13 @@ impl ORBFlann for PaperPair {
             )
             .unwrap();
             let diff = (transformed_source - &self.scanned).into_result().unwrap();
-            imshow("diff", &diff).unwrap();
+            let mut blurred = Mat::default();
+            median_blur(&diff, &mut blurred, 7);
+            imshow("blurred_diff", &blurred).unwrap();
             wait_key(0).unwrap();
             imwrite(
-                "diff.png",
-                &diff,
+                "diff_blurred.png",
+                &blurred,
                 &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
             )
             .unwrap();
