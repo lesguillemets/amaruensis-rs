@@ -10,18 +10,18 @@ pub struct SheetData {
 }
 
 #[derive(Default)]
-pub struct SheetBuilder {
+pub struct SheetDataBuilder {
     name: Option<String>,
     img_path: Option<String>,
     detect_rects: Option<Vec<Rect_>>,
 }
 
-impl SheetBuilder {
+impl SheetDataBuilder {
     pub fn new() -> Self {
-        SheetBuilder::default()
+        SheetDataBuilder::default()
     }
     pub fn new_with_name(n: &str) -> Self {
-        SheetBuilder::new().name(n.to_string())
+        SheetDataBuilder::new().name(n.to_string())
     }
     pub fn name(mut self, n: String) -> Self {
         self.name = Some(n);
