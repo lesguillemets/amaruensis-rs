@@ -1,4 +1,5 @@
-use opencv::core::{no_array, DMatch, KeyPoint, Ptr, Vector, CV_32F};
+use opencv::calib3d::{find_homography, RANSAC};
+use opencv::core::{no_array, DMatch, KeyPoint, Point2f, Ptr, Vector, CV_32F};
 use opencv::features2d::{
     draw_keypoints_def, draw_matches_def, FlannBasedMatcher, KeyPointsFilter, ORB,
 };
@@ -19,10 +20,13 @@ pub trait ORBFlann {
 
 impl ORBFlann for PaperPair {
     fn detect_transform(&self) {
+        // find keypoints
         let (source_keypoints, source_descriptors) = detect_and_compute_orb(
             &self.source,
             Some(self.sheet_data.gen_detect_mask(&self.source).unwrap()),
         );
+        // for scanned images, the corresponding points should be near that area.
+        // We will search an area expanded a little (by ORB_ENLARGE_RECT_BY).
         let (scan_keypoints, scan_descriptors) = detect_and_compute_orb(
             &self.scanned,
             Some(
@@ -35,6 +39,8 @@ impl ORBFlann for PaperPair {
                     .unwrap(),
             ),
         );
+
+        // use flann matcher to find matches
         let autoindexparams = flann::AutotunedIndexParams::new_def().expect("autotunedindexparams");
         let flann_matcher = FlannBasedMatcher::new(
             &Ptr::new(autoindexparams.into()),
@@ -55,7 +61,7 @@ impl ORBFlann for PaperPair {
             .train_match_def(&src_desc, &scan_desc, &mut matches)
             .unwrap();
         // use the best matches in the visualisation
-        let mut best_matches: Vec<DMatch> = matches.into_iter().collect();
+        let mut best_matches: Vec<DMatch> = matches.iter().collect();
         best_matches.sort_by(|ma, mb| ma.distance.partial_cmp(&mb.distance).unwrap());
         best_matches = best_matches
             .into_iter()
@@ -82,6 +88,29 @@ impl ORBFlann for PaperPair {
             )
             .unwrap();
         }
+
+        // find the transformation matrix
+        let mut from_points: Vector<KeyPoint> = Vector::with_capacity(bm.len());
+        let mut to_points: Vector<KeyPoint> = Vector::with_capacity(bm.len());
+        for kp in bm.iter() {
+            from_points.push(
+                source_keypoints
+                    .get(kp.train_idx.try_into().unwrap())
+                    .unwrap(),
+            );
+            to_points.push(
+                scan_keypoints
+                    .get(kp.query_idx.try_into().unwrap())
+                    .unwrap(),
+            );
+        }
+        let mut from_p2f: Vector<Point2f> = Vector::with_capacity(bm.len());
+        KeyPoint::convert_def(&from_points, &mut from_p2f).unwrap();
+        let mut to_p2f: Vector<Point2f> = Vector::with_capacity(bm.len());
+        KeyPoint::convert_def(&to_points, &mut to_p2f).unwrap();
+        let mut result_mask = Mat::default();
+        let homography = find_homography(&from_p2f, &to_p2f, &mut result_mask, RANSAC, 10.0);
+        eprintln!("{:?}", homography);
     }
 }
 
