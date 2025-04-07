@@ -144,8 +144,10 @@ impl ORBFlann for PaperPair {
             )
             .unwrap();
             let diff = (transformed_source - &self.scanned).into_result().unwrap();
+            let mut blurred_first = Mat::default();
+            median_blur(&diff, &mut blurred_first, 5).unwrap();
             let mut blurred = Mat::default();
-            median_blur(&diff, &mut blurred, 7);
+            median_blur(&blurred_first, &mut blurred, 3).unwrap();
             imshow("blurred_diff", &blurred).unwrap();
             wait_key(0).unwrap();
             imwrite(
