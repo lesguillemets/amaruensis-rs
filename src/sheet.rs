@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::From;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Sheet {
+pub struct SheetData {
     pub name: String,
     pub img_path: String,
     pub detect_rects: Vec<Rect_>,
@@ -36,8 +36,8 @@ impl SheetBuilder {
         self
     }
 
-    pub fn build(self) -> Option<Sheet> {
-        Some(Sheet {
+    pub fn build(self) -> Option<SheetData> {
+        Some(SheetData {
             name: self.name?,
             img_path: self.img_path?,
             detect_rects: self.detect_rects?,

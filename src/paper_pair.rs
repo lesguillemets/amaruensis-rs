@@ -3,7 +3,7 @@ use opencv::imgcodecs::{imread, ImreadModes};
 use opencv::prelude::*;
 
 use crate::base::{to_bw, to_bw_ohtsu};
-use crate::sheet::Sheet;
+use crate::sheet::SheetData;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -14,7 +14,7 @@ const DEBUG: bool = true;
 #[derive(Clone, Debug)]
 pub struct PaperPair {
     pub source: Mat,
-    pub sheet_data: Sheet,
+    pub sheet_data: SheetData,
     pub scanned: Mat,
 }
 
@@ -24,7 +24,7 @@ impl PaperPair {
         let scanned = imread(scanned, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
         let sheet_file = File::open(sheet).unwrap();
         let reader = BufReader::new(sheet_file);
-        let sheet_data: Sheet = serde_json::from_reader(reader).unwrap();
+        let sheet_data: SheetData = serde_json::from_reader(reader).unwrap();
         if DEBUG {
             eprintln!("Loaded paper: {paper:?}");
             eprintln!("Loaded scanned: {scanned:?}");
