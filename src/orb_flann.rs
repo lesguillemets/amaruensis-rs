@@ -61,7 +61,7 @@ impl ORBFlann for PaperPair {
             .convert_to_def(&mut scan_desc, CV_32F)
             .unwrap();
         flann_matcher
-            .train_match_def(&src_desc, &scan_desc, &mut matches)
+            .train_match_def(&scan_desc, &src_desc, &mut matches)
             .unwrap();
         // use the best matches in the visualisation
         let mut best_matches: Vec<DMatch> = matches.iter().collect();
