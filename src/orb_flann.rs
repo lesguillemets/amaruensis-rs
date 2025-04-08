@@ -2,22 +2,19 @@ use opencv::calib3d::{find_homography, RANSAC};
 use opencv::core::{
     no_array, DMatch, KeyPoint, Point2f, Ptr, Size, VecN, Vector, BORDER_CONSTANT, CV_32F,
 };
-use opencv::features2d::{
-    draw_keypoints_def, draw_matches_def, FlannBasedMatcher, ORB,
-};
+use opencv::features2d::{draw_keypoints_def, draw_matches_def, FlannBasedMatcher, ORB};
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imwrite, ImwriteFlags};
-use opencv::imgproc::{
-    median_blur, warp_perspective, INTER_LINEAR,
-};
+use opencv::imgproc::{median_blur, warp_perspective, INTER_LINEAR};
 use opencv::prelude::*;
 
-use crate::base::gather_good_matches_lowe;
-use crate::consts::{LOWE_DEFAULT_THRESHOLD, ORB_ENLARGE_RECT_BY};
+use crate::base::{gather_good_matches_lowe, gather_good_matches_take_n};
+use crate::consts::{LOWE_DEFAULT_THRESHOLD, ORB_ENLARGE_RECT_BY, ORB_FLANN_SHOW_N_BEST_MATCHES};
 use crate::paper_pair::PaperPair;
 
 const DEBUG: bool = true;
+const PREFER_LOWE: bool = true;
 
 pub trait ORBFlann {
     fn detect_transform(&self);
@@ -52,7 +49,6 @@ impl ORBFlann for PaperPair {
             &Ptr::new(flann::SearchParams::new_def().unwrap()),
         )
         .expect("Creating FlannBasedMatcher");
-        let mut matches = Vector::new();
         let mut src_desc = Mat::default();
         let mut scan_desc = Mat::default();
         // https://stackoverflow.com/a/29695032
@@ -62,11 +58,20 @@ impl ORBFlann for PaperPair {
         scan_descriptors
             .convert_to_def(&mut scan_desc, CV_32F)
             .unwrap();
-        flann_matcher
-            .knn_train_match_def(&scan_desc, &src_desc, &mut matches, 2)
-            .unwrap();
         // use the best matches in the visualisation
-        let bm: Vector<DMatch> = gather_good_matches_lowe(&matches, LOWE_DEFAULT_THRESHOLD);
+        let bm: Vector<DMatch> = if PREFER_LOWE {
+            let mut matches = Vector::new();
+            flann_matcher
+                .knn_train_match_def(&scan_desc, &src_desc, &mut matches, 2)
+                .unwrap();
+            gather_good_matches_lowe(&matches, LOWE_DEFAULT_THRESHOLD)
+        } else {
+            let mut matches = Vector::new();
+            flann_matcher
+                .train_match_def(&scan_desc, &src_desc, &mut matches)
+                .unwrap();
+            gather_good_matches_take_n(&matches, ORB_FLANN_SHOW_N_BEST_MATCHES)
+        };
         if DEBUG {
             let mut result = Mat::default();
             draw_matches_def(
