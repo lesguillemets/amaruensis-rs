@@ -7,3 +7,5 @@ pub const BLACK_WHITE_THRESH: f64 = 128.0;
 
 pub const ORB_FLANN_SHOW_N_BEST_MATCHES: usize = 30;
 pub const ORB_ENLARGE_RECT_BY: i32 = 80;
+
+pub const LOWE_DEFAULT_THRESHOLD: f32 = 0.75;

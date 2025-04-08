@@ -13,8 +13,8 @@ use opencv::imgproc::{
 };
 use opencv::prelude::*;
 
-use crate::consts::{ORB_ENLARGE_RECT_BY, ORB_FLANN_SHOW_N_BEST_MATCHES};
-
+use crate::base::gather_good_matches_lowe;
+use crate::consts::{LOWE_DEFAULT_THRESHOLD, ORB_ENLARGE_RECT_BY, ORB_FLANN_SHOW_N_BEST_MATCHES};
 use crate::paper_pair::PaperPair;
 
 const DEBUG: bool = true;
@@ -63,16 +63,10 @@ impl ORBFlann for PaperPair {
             .convert_to_def(&mut scan_desc, CV_32F)
             .unwrap();
         flann_matcher
-            .train_match_def(&scan_desc, &src_desc, &mut matches)
+            .knn_train_match_def(&scan_desc, &src_desc, &mut matches, 2)
             .unwrap();
         // use the best matches in the visualisation
-        let mut best_matches: Vec<DMatch> = matches.iter().collect();
-        best_matches.sort_by(|ma, mb| ma.distance.partial_cmp(&mb.distance).unwrap());
-        best_matches = best_matches
-            .into_iter()
-            .take(ORB_FLANN_SHOW_N_BEST_MATCHES)
-            .collect();
-        let bm: Vector<DMatch> = best_matches.into_iter().collect();
+        let bm: Vector<DMatch> = gather_good_matches_lowe(&matches, LOWE_DEFAULT_THRESHOLD);
         if DEBUG {
             let mut result = Mat::default();
             draw_matches_def(
