@@ -3,18 +3,18 @@ use opencv::core::{
     no_array, DMatch, KeyPoint, Point2f, Ptr, Size, VecN, Vector, BORDER_CONSTANT, CV_32F,
 };
 use opencv::features2d::{
-    draw_keypoints_def, draw_matches_def, FlannBasedMatcher, KeyPointsFilter, ORB,
+    draw_keypoints_def, draw_matches_def, FlannBasedMatcher, ORB,
 };
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imwrite, ImwriteFlags};
 use opencv::imgproc::{
-    median_blur, warp_perspective, warp_perspective_def, INTER_LINEAR, WARP_INVERSE_MAP,
+    median_blur, warp_perspective, INTER_LINEAR,
 };
 use opencv::prelude::*;
 
 use crate::base::gather_good_matches_lowe;
-use crate::consts::{LOWE_DEFAULT_THRESHOLD, ORB_ENLARGE_RECT_BY, ORB_FLANN_SHOW_N_BEST_MATCHES};
+use crate::consts::{LOWE_DEFAULT_THRESHOLD, ORB_ENLARGE_RECT_BY};
 use crate::paper_pair::PaperPair;
 
 const DEBUG: bool = true;

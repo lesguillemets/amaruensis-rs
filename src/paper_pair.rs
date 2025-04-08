@@ -30,7 +30,7 @@ impl PaperPair {
             eprintln!("Loaded scanned: {scanned:?}");
             eprintln!("Loaded sheet: {sheet_data:?}");
         }
-        let mut p = PaperPair {
+        let p = PaperPair {
             source: paper,
             sheet_data,
             scanned,
