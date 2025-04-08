@@ -23,10 +23,11 @@ impl SheetData {
             CV_8UC1,
             Scalar_::new(0.0, 0.0, 0.0, 0.0),
         )?;
-        // FIXME: multiple rects
-        let mut roi = m.roi_mut(self.detect_rects[0].enlarge(by_x, by_y).into())?;
-        // FIXME : not sure
-        roi.set_to_def(&Scalar_::new(255.0, 255.0, 255.0, 255.0))?;
+        for r in &self.detect_rects {
+            let mut roi = m.roi_mut(r.enlarge(by_x, by_y).into())?;
+            // FIXME : not sure
+            roi.set_to_def(&Scalar_::new(255.0, 255.0, 255.0, 255.0))?;
+        }
         Ok(m)
     }
 }
