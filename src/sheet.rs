@@ -104,8 +104,8 @@ impl Rect_ {
 
     /// 両側に広げた Rect_ を返す
     pub fn enlarge(&self, by_x: i32, by_y: i32) -> Self {
-        let x = std::cmp::max(self.x - by_x, 0);
-        let y = std::cmp::max(self.y - by_y, 0);
+        let x = max(self.x - by_x, 0);
+        let y = max(self.y - by_y, 0);
         let rightmost = self.x + self.width + by_x;
         let bottommost = self.y + self.height + by_y;
         Rect_ {
