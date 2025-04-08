@@ -2,6 +2,7 @@ use opencv::core::{Rect, Scalar_, CV_8UC1};
 use opencv::error;
 use opencv::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::{max, min};
 use std::convert::From;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -17,14 +18,12 @@ impl SheetData {
     }
 
     pub fn gen_enlarged_detect_mask(&self, img: &Mat, by_x: i32, by_y: i32) -> error::Result<Mat> {
-        let mut m = Mat::new_rows_cols_with_default(
-            img.rows(),
-            img.cols(),
-            CV_8UC1,
-            Scalar_::new(0.0, 0.0, 0.0, 0.0),
-        )?;
+        let rows = img.rows();
+        let cols = img.cols();
+        let mut m =
+            Mat::new_rows_cols_with_default(rows, cols, CV_8UC1, Scalar_::new(0.0, 0.0, 0.0, 0.0))?;
         for r in &self.detect_rects {
-            let mut roi = m.roi_mut(r.enlarge(by_x, by_y).into())?;
+            let mut roi = m.roi_mut(r.enlarge(by_x, by_y).fit_within(cols, rows).into())?;
             // FIXME : not sure
             roi.set_to_def(&Scalar_::new(255.0, 255.0, 255.0, 255.0))?;
         }
@@ -86,6 +85,23 @@ impl Rect_ {
             height,
         }
     }
+
+    /// truncate to fit within (0,0) and (xm,ym)
+    pub fn fit_within(&self, xm: i32, ym: i32) -> Self {
+        // intentionally leaving negative cases (i.e. x<0)
+        // because that is an unexpected case which should result in an error
+        let x = min(xm, self.x);
+        let y = min(ym, self.y);
+        let width = min(self.x + self.width, xm) - x;
+        let height = min(self.y + self.height, ym) - y;
+        Rect_ {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
     /// 両側に広げた Rect_ を返す
     pub fn enlarge(&self, by_x: i32, by_y: i32) -> Self {
         let x = std::cmp::max(self.x - by_x, 0);
