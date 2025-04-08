@@ -17,11 +17,12 @@ const DEBUG: bool = true;
 const PREFER_LOWE: bool = true;
 
 pub trait ORBFlann {
-    fn detect_transform(&self);
+    fn detect_transform(&self) -> Mat;
+    fn calc_diff(&self);
 }
 
 impl ORBFlann for PaperPair {
-    fn detect_transform(&self) {
+    fn detect_transform(&self) -> Mat {
         // find keypoints
         let (source_keypoints, source_descriptors) = detect_and_compute_orb(
             &self.source,
@@ -115,9 +116,11 @@ impl ORBFlann for PaperPair {
         let mut to_p2f: Vector<Point2f> = Vector::with_capacity(bm.len());
         KeyPoint::convert_def(&to_points, &mut to_p2f).unwrap();
         let mut result_mask = Mat::default();
-        let homography =
-            find_homography(&from_p2f, &to_p2f, &mut result_mask, RANSAC, 10.0).unwrap();
+        find_homography(&from_p2f, &to_p2f, &mut result_mask, RANSAC, 10.0).unwrap()
+    }
 
+    fn calc_diff(&self) {
+        let homography = self.detect_transform();
         // use that matrix to transform
         let mut transformed_source = Mat::default();
         warp_perspective(

@@ -12,7 +12,7 @@ use paper_pair::PaperPair;
 pub fn do_main(f0: String, f1: String, fs: String) {
     eprint_opencv_version();
     let pair = PaperPair::from_files(&f0, &f1, &fs, false);
-    pair.detect_transform();
+    pair.calc_diff();
 }
 
 fn eprint_opencv_version() {
