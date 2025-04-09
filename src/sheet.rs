@@ -16,6 +16,9 @@ impl SheetData {
     pub fn gen_detect_mask(&self, img: &Mat) -> error::Result<Mat> {
         self.gen_enlarged_detect_mask(img, 0, 0)
     }
+    pub fn gen_detect_masks(&self, img: &Mat) -> error::Result<Vec<Mat>> {
+        self.gen_enlarged_detect_masks(img, 0, 0)
+    }
 
     pub fn gen_enlarged_detect_mask(&self, img: &Mat, by_x: i32, by_y: i32) -> error::Result<Mat> {
         let rows = img.rows();
@@ -28,6 +31,30 @@ impl SheetData {
             roi.set_to_def(&Scalar_::new(255.0, 255.0, 255.0, 255.0))?;
         }
         Ok(m)
+    }
+    pub fn gen_enlarged_detect_masks(
+        &self,
+        img: &Mat,
+        by_x: i32,
+        by_y: i32,
+    ) -> error::Result<Vec<Mat>> {
+        let rows = img.rows();
+        let cols = img.cols();
+        let mut masks = vec![];
+        // use for loop rather than iter().map() for easier application of ?
+        for r in &self.detect_rects {
+            let mut m = Mat::new_rows_cols_with_default(
+                rows,
+                cols,
+                CV_8UC1,
+                Scalar_::new(0.0, 0.0, 0.0, 0.0),
+            )?;
+            let mut roi = m.roi_mut(r.enlarge(by_x, by_y).fit_within(cols, rows).into())?;
+            // FIXME : not sure
+            roi.set_to_def(&Scalar_::new(255.0, 255.0, 255.0, 255.0))?;
+            masks.push(m);
+        }
+        Ok(masks)
     }
 }
 
