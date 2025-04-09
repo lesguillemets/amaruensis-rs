@@ -6,7 +6,7 @@ use opencv::features2d::{draw_keypoints_def, draw_matches_def, FlannBasedMatcher
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imwrite, ImwriteFlags};
-use opencv::imgproc::{median_blur, warp_perspective, INTER_LINEAR};
+use opencv::imgproc::{median_blur, warp_perspective, INTER_LINEAR, WARP_INVERSE_MAP};
 use opencv::prelude::*;
 
 use crate::base::{gather_good_matches_lowe, gather_good_matches_take_n};
@@ -131,30 +131,30 @@ impl ORBFlann for PaperPair {
     fn calc_diff(&self) {
         let homography = self.detect_transform();
         // use that matrix to transform
-        let mut transformed_source = Mat::default();
+        let mut transformed_scanned = Mat::default();
         warp_perspective(
-            &self.source,
-            &mut transformed_source,
+            &self.scanned,
+            &mut transformed_scanned,
             &homography,
             Size {
-                width: self.scanned.cols(),
-                height: self.scanned.rows(),
+                width: self.source.cols(),
+                height: self.source.rows(),
             },
-            INTER_LINEAR,
+            INTER_LINEAR + WARP_INVERSE_MAP,
             BORDER_CONSTANT,
             VecN::default(),
         )
         .unwrap();
         if DEBUG {
-            imshow("transformed", &transformed_source).unwrap();
+            imshow("transformed", &transformed_scanned).unwrap();
             wait_key(0).unwrap();
             imwrite(
                 "transformed.png",
-                &transformed_source,
+                &transformed_scanned,
                 &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
             )
             .unwrap();
-            let diff = (transformed_source - &self.scanned).into_result().unwrap();
+            let diff = (&self.source - transformed_scanned).into_result().unwrap();
             let mut blurred_first = Mat::default();
             median_blur(&diff, &mut blurred_first, 5).unwrap();
             let mut blurred = Mat::default();
