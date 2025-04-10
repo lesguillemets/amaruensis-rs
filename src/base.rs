@@ -6,17 +6,21 @@ use crate::consts;
 
 const DEBUG: bool = true;
 
-pub fn to_bw(m: &Mat) -> Mat {
+pub fn to_bw(m: &Mat, thresh: f64) -> Mat {
     let mut dest = Mat::default();
     threshold(
         m,
         &mut dest,
-        consts::BLACK_WHITE_THRESH,
+        thresh,
         consts::WHITE,
         ThresholdTypes::THRESH_BINARY.into(),
     )
     .unwrap();
     dest
+}
+
+pub fn to_bw_def(m: &Mat) -> Mat {
+    to_bw(m, consts::BLACK_WHITE_THRESH)
 }
 
 pub fn to_bw_ohtsu(m: &Mat) -> Mat {

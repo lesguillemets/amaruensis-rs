@@ -18,8 +18,18 @@ pub struct PaperPair {
     pub scanned: Mat,
 }
 
+/// What to do after loading the image
+pub enum ImgPreProcess {
+    /// Keep the grayscale
+    NoAction,
+    /// Use threshold to bw
+    ToBW(f64),
+    /// Use Otsu
+    ToBWOhtsu,
+}
+
 impl PaperPair {
-    pub fn from_files(source: &str, scanned: &str, sheet: &str, use_otsu: bool) -> Self {
+    pub fn from_files(source: &str, scanned: &str, sheet: &str, preprocess: ImgPreProcess) -> Self {
         let paper = imread(source, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
         let scanned = imread(scanned, ImreadModes::IMREAD_GRAYSCALE.into()).unwrap();
         let sheet_file = File::open(sheet).unwrap();
@@ -30,16 +40,20 @@ impl PaperPair {
             eprintln!("Loaded scanned: {scanned:?}");
             eprintln!("Loaded sheet: {sheet_data:?}");
         }
-        let p = PaperPair {
+        let mut p = PaperPair {
             source: paper,
             sheet_data,
             scanned,
         };
         // p.fit_sizes();
-        if use_otsu {
-            p.apply(to_bw_ohtsu);
-        } else {
-            p.apply(to_bw);
+        match preprocess {
+            ImgPreProcess::NoAction => {}
+            ImgPreProcess::ToBW(threshold) => {
+                p.apply_inplace(|m| to_bw(m, threshold));
+            }
+            ImgPreProcess::ToBWOhtsu => {
+                p.apply_inplace(to_bw_ohtsu);
+            }
         }
         p
     }
@@ -52,7 +66,7 @@ impl PaperPair {
             scanned: new_scanned,
         }
     }
-    pub fn apply_inplace(&mut self, f: fn(&Mat) -> Mat) {
+    pub fn apply_inplace<F: Fn(&Mat) -> Mat>(&mut self, f: F) {
         self.source = f(&self.source);
         self.scanned = f(&self.scanned);
     }

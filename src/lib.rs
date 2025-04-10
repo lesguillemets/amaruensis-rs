@@ -7,11 +7,11 @@ pub mod sheet;
 use opencv::core::CV_VERSION;
 
 use orb_flann::ORBFlann;
-use paper_pair::PaperPair;
+use paper_pair::{ImgPreProcess, PaperPair};
 
 pub fn do_main(f0: String, f1: String, fs: String) {
     eprint_opencv_version();
-    let pair = PaperPair::from_files(&f0, &f1, &fs, false);
+    let pair = PaperPair::from_files(&f0, &f1, &fs, ImgPreProcess::NoAction);
     pair.calc_diff();
 }
 
