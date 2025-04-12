@@ -136,7 +136,7 @@ fn calc_diff(source: &Mat, scanned: &Mat, homography: &Mat) {
     )
     .unwrap();
     let diff_blurred =
-        DiffThenMedianBlur::use_ksizes(vec![5, 3]).diff(source, &transformed_scanned);
+        DiffThenMedianBlur::use_ksizes(vec![5, 5, 5]).diff(source, &transformed_scanned);
     if DEBUG {
         imshow("transformed", &transformed_scanned).unwrap();
         wait_key(0).unwrap();
