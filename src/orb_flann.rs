@@ -6,11 +6,12 @@ use opencv::features2d::{draw_keypoints_def, draw_matches_def, FlannBasedMatcher
 use opencv::flann;
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgcodecs::{imwrite, ImwriteFlags};
-use opencv::imgproc::{median_blur, warp_perspective, INTER_LINEAR, WARP_INVERSE_MAP};
+use opencv::imgproc::{warp_perspective, INTER_LINEAR, WARP_INVERSE_MAP};
 use opencv::prelude::*;
 
 use crate::base::{gather_good_matches_lowe, gather_good_matches_take_n};
 use crate::consts::{LOWE_DEFAULT_THRESHOLD, ORB_ENLARGE_RECT_BY, ORB_FLANN_SHOW_N_BEST_MATCHES};
+use crate::diff::{DiffMethod, DiffThenMedianBlur};
 use crate::paper_pair::PaperPair;
 use crate::sheet::SheetData;
 
@@ -134,6 +135,8 @@ fn calc_diff(source: &Mat, scanned: &Mat, homography: &Mat) {
         VecN::default(),
     )
     .unwrap();
+    let diff_blurred =
+        DiffThenMedianBlur::use_ksizes(vec![5, 3]).diff(source, &transformed_scanned);
     if DEBUG {
         imshow("transformed", &transformed_scanned).unwrap();
         wait_key(0).unwrap();
@@ -143,16 +146,11 @@ fn calc_diff(source: &Mat, scanned: &Mat, homography: &Mat) {
             &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
         )
         .unwrap();
-        let diff = (source - transformed_scanned).into_result().unwrap();
-        let mut blurred_first = Mat::default();
-        median_blur(&diff, &mut blurred_first, 5).unwrap();
-        let mut blurred = Mat::default();
-        median_blur(&blurred_first, &mut blurred, 3).unwrap();
-        imshow("blurred_diff", &blurred).unwrap();
+        imshow("blurred_diff", &diff_blurred).unwrap();
         wait_key(0).unwrap();
         imwrite(
             "diff_blurred.png",
-            &blurred,
+            &diff_blurred,
             &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
         )
         .unwrap();

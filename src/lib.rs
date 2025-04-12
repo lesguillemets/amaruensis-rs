@@ -1,5 +1,6 @@
 mod base;
 pub mod consts;
+mod diff;
 mod orb_flann;
 mod paper_pair;
 pub mod sheet;
