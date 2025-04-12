@@ -118,6 +118,47 @@ fn detect_transform_orb_flann(
     find_homography(&from_p2f, &to_p2f, &mut result_mask, RANSAC, 10.0).unwrap()
 }
 
+fn calc_diff(source: &Mat, scanned: &Mat, homography: &Mat) {
+    // use that matrix to transform
+    let mut transformed_scanned = Mat::default();
+    warp_perspective(
+        &scanned,
+        &mut transformed_scanned,
+        &homography,
+        Size {
+            width: source.cols(),
+            height: source.rows(),
+        },
+        INTER_LINEAR + WARP_INVERSE_MAP,
+        BORDER_CONSTANT,
+        VecN::default(),
+    )
+    .unwrap();
+    if DEBUG {
+        imshow("transformed", &transformed_scanned).unwrap();
+        wait_key(0).unwrap();
+        imwrite(
+            "transformed.png",
+            &transformed_scanned,
+            &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
+        )
+        .unwrap();
+        let diff = (source - transformed_scanned).into_result().unwrap();
+        let mut blurred_first = Mat::default();
+        median_blur(&diff, &mut blurred_first, 5).unwrap();
+        let mut blurred = Mat::default();
+        median_blur(&blurred_first, &mut blurred, 3).unwrap();
+        imshow("blurred_diff", &blurred).unwrap();
+        wait_key(0).unwrap();
+        imwrite(
+            "diff_blurred.png",
+            &blurred,
+            &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
+        )
+        .unwrap();
+    }
+}
+
 impl ORBFlann for PaperPair {
     fn detect_transform(&self) -> Mat {
         detect_transform_orb_flann(
@@ -127,47 +168,9 @@ impl ORBFlann for PaperPair {
             ORB_ENLARGE_RECT_BY,
         )
     }
-
     fn calc_diff(&self) {
         let homography = self.detect_transform();
-        // use that matrix to transform
-        let mut transformed_scanned = Mat::default();
-        warp_perspective(
-            &self.scanned,
-            &mut transformed_scanned,
-            &homography,
-            Size {
-                width: self.source.cols(),
-                height: self.source.rows(),
-            },
-            INTER_LINEAR + WARP_INVERSE_MAP,
-            BORDER_CONSTANT,
-            VecN::default(),
-        )
-        .unwrap();
-        if DEBUG {
-            imshow("transformed", &transformed_scanned).unwrap();
-            wait_key(0).unwrap();
-            imwrite(
-                "transformed.png",
-                &transformed_scanned,
-                &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
-            )
-            .unwrap();
-            let diff = (&self.source - transformed_scanned).into_result().unwrap();
-            let mut blurred_first = Mat::default();
-            median_blur(&diff, &mut blurred_first, 5).unwrap();
-            let mut blurred = Mat::default();
-            median_blur(&blurred_first, &mut blurred, 3).unwrap();
-            imshow("blurred_diff", &blurred).unwrap();
-            wait_key(0).unwrap();
-            imwrite(
-                "diff_blurred.png",
-                &blurred,
-                &Vector::from_slice(&[ImwriteFlags::IMWRITE_PNG_COMPRESSION.into(), 9]),
-            )
-            .unwrap();
-        }
+        calc_diff(&self.source, &self.scanned, &homography);
     }
 }
 
